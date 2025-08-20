@@ -789,7 +789,7 @@ function findType(pattern, gens) {
             let y = p.y - pattern.y;
             let q = new Pattern(pattern);
             let phases = [];
-            for (let i = 0; i < period * 8; i++) {
+            for (let i = 0; i < period + 1; i++) {
                 phases.push({data: q.data.slice(), x: q.x, y: q.y, height: q.height, width: q.width});
                 q.runGeneration();
             }
@@ -824,7 +824,7 @@ function verifyType(pattern, p, type) {
         }
         return true;
     } else {
-        for (let i = 1; i < type.p * 8; i++) {
+        for (let i = 1; i < type.p + 1; i++) {
             p.runGeneration();
             let q = type.phases[i];
             if (!q.data.every((x, j) => x === p.data[j]) || q.height !== p.height || q.width !== p.width || q.x !== p.x || p.y !== q.y) {
