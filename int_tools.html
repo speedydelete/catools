@@ -280,7 +280,7 @@ const TRANSITIONS = {
         n: [1, 0, 0, 1, 2, 0, 1, 0, 1],
         y: [1, 0, 1, 0, 2, 0, 1, 1, 0],
         q: [1, 1, 0, 1, 2, 0, 0, 0, 1],
-        j: [0, 0, 1, 1, 2, 0, 0, 1, 0],
+        j: [0, 0, 1, 1, 2, 1, 0, 1, 0],
         r: [0, 1, 1, 0, 2, 1, 0, 1, 0],
         t: [1, 1, 1, 0, 2, 0, 0, 1, 0],
         w: [1, 0, 0, 1, 2, 0, 0, 1, 1],
@@ -510,6 +510,33 @@ class Pattern {
             this.width = width;
             this.rule = rule;   
         }
+        let lowX = this.width;
+        let highX = -1;
+        let lowY = this.height;
+        let highY = -1;
+        let i = 0;
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                if (this.data[i]) {
+                    if (y < lowY) {
+                        lowY = y;
+                    }
+                    if (y > highY) {
+                        highY = y;
+                    }
+                    if (x < lowX) {
+                        lowX = x;
+                    }
+                    if (x > highX) {
+                        highX = x;
+                    }
+                }
+                i++;
+            }
+        }
+        this.resizeToFit(lowX, highX, lowY, highY);
+        this.x = 0;
+        this.y = 0;
     }
 
     get population() {
@@ -642,6 +669,65 @@ class Pattern {
         return out + '!\n';
     }
 
+    resizeToFit(lowX, highX, lowY, highY) {
+        if (highX < lowX || highY < lowY) {
+            this.data = new Uint8Array(0);
+            this.width = 0;
+            this.height = 0;
+            return;
+        }
+        let growTop = lowY === 0;
+        let growBottom = highY === this.height - 1;
+        let growLeft = lowX === 0;
+        let growRight = highX === this.width - 1;
+        let shrinkTop = lowY - 1;
+        if (shrinkTop < 0) {
+            shrinkTop = 0;
+        }
+        let shrinkBottom = this.height - 2 - highY;
+        if (shrinkBottom < 0) {
+            shrinkBottom = 0;
+        }
+        let shrinkLeft = lowX - 1;
+        if (shrinkLeft < 0) {
+            shrinkLeft = 0;
+        }
+        let shrinkRight = this.width - 2 - highX;
+        if (shrinkRight < 0) {
+            shrinkRight = 0;
+        }
+        let newHeight = this.height + (growTop ? 1 : 0) + (growBottom ? 1 : 0) - shrinkTop - shrinkBottom;
+        let newWidth  = this.width  + (growLeft ? 1 : 0) + (growRight ? 1 : 0) - shrinkLeft - shrinkRight;
+        if (newHeight < 0) {
+            newHeight = 0;
+        }
+        if (newWidth < 0) {
+            newWidth = 0;
+        }
+        let newData = new Uint8Array(newWidth * newHeight);
+        let yOffset = (growTop ? 1 : 0) - shrinkTop;
+        let xOffset = (growLeft ? 1 : 0) - shrinkLeft;
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                let value = this.data[y * this.width + x];
+                if (value) {
+                    let ny = y + yOffset;
+                    let nx = x + xOffset;
+                    if (ny >= 0 && ny < newHeight && nx >= 0 && nx < newWidth) {
+                        newData[ny * newWidth + nx] = value;
+                    }
+                }
+            }
+        }
+        this.height = newHeight;
+        this.width = newWidth;
+        this.data = newData;
+        this.y += shrinkTop;
+        this.y -= growTop ? 1 : 0;
+        this.x += shrinkLeft;
+        this.x -= growLeft ? 1 : 0;
+    }
+
     runGeneration() {
         if (!this.parsedRule) {
             this.parsedRule = parseRule(this.rule);
@@ -684,62 +770,8 @@ class Pattern {
                 i++;
             }
         }
-        if (highX < lowX || highY < lowY) {
-            this.data = new Uint8Array(0);
-            this.width = 0;
-            this.height = 0;
-            return;
-        }
-        let growTop = lowY === 0;
-        let growBottom = highY === this.height - 1;
-        let growLeft = lowX === 0;
-        let growRight = highX === this.width - 1;
-        let shrinkTop = lowY - 1;
-        if (shrinkTop < 0) {
-            shrinkTop = 0;
-        }
-        let shrinkBottom = this.height - 2 - highY;
-        if (shrinkBottom < 0) {
-            shrinkBottom = 0;
-        }
-        let shrinkLeft = lowX - 1;
-        if (shrinkLeft < 0) {
-            shrinkLeft = 0;
-        }
-        let shrinkRight = this.width - 2 - highX;
-        if (shrinkRight < 0) {
-            shrinkRight = 0;
-        }
-        let newHeight = this.height + (growTop ? 1 : 0) + (growBottom ? 1 : 0) - shrinkTop - shrinkBottom;
-        let newWidth  = this.width  + (growLeft ? 1 : 0) + (growRight ? 1 : 0) - shrinkLeft - shrinkRight;
-        if (newHeight < 0) {
-            newHeight = 0;
-        }
-        if (newWidth < 0) {
-            newWidth = 0;
-        }
-        let newData = new Uint8Array(newWidth * newHeight);
-        let yOffset = (growTop ? 1 : 0) - shrinkTop;
-        let xOffset = (growLeft ? 1 : 0) - shrinkLeft;
-        for (let y = 0; y < this.height; y++) {
-            for (let x = 0; x < this.width; x++) {
-                let value = out[y * this.width + x];
-                if (value) {
-                    let ny = y + yOffset;
-                    let nx = x + xOffset;
-                    if (ny >= 0 && ny < newHeight && nx >= 0 && nx < newWidth) {
-                        newData[ny * newWidth + nx] = value;
-                    }
-                }
-            }
-        }
-        this.height = newHeight;
-        this.width = newWidth;
-        this.data = newData;
-        this.y += shrinkTop;
-        this.y -= growTop ? 1 : 0;
-        this.x += shrinkLeft;
-        this.x -= growLeft ? 1 : 0;
+        this.data = out;
+        this.resizeToFit(lowX, highX, lowY, highY);
     }
 
 }
@@ -752,41 +784,54 @@ function findType(pattern, gens) {
         p.runGeneration();
         pops.push(p.population);
         if (p.data.every((x, i) => x === pattern.data[i])) {
+            let period = i + 1;
             let x = p.x - pattern.x;
             let y = p.y - pattern.y;
-            return {p: i + 1, x, y};
+            let q = new Pattern(pattern);
+            let phases = [];
+            for (let i = 0; i < period * 8; i++) {
+                phases.push({data: q.data.slice(), x: q.x, y: q.y, height: q.height, width: q.width});
+                q.runGeneration();
+            }
+            return {p: period, x, y, phases};
         }
-        for (let p = 1; p < i/4; p++) {
-            let fpops = pops.filter((x, i) => i % p === 0);
-            let diffs = fpops.slice(0, -1).map((x, i) => fpops[i + 1] - x);
-            if (diffs.every(x => x === diffs[0])) {
-                return {linear: true, p, d: diffs[0]};
+        if (i > 8) {
+            for (let p = 1; p < i/8; p++) {
+                let fpops = pops.filter((x, i) => i % p === 0);
+                let diffs = fpops.slice(0, -1).map((x, i) => fpops[i + 1] - x);
+                if (diffs.every(x => x === diffs[0])) {
+                    return {linear: true, p, d: diffs[0]};
+                }
             }
         }
     }
     return {error: true};
 }
 
-function verifyType(pattern, type) {
+function verifyType(pattern, p, type) {
     if (type.error) {
         return true;
-    }
-    if (type.linear) {
-        let p = new Pattern(pattern);
-        let pops = [];
+    } else if (type.linear) {
+        let oldPop = p.population;
         for (let i = 0; i <= type.p * 8; i++) {
-            if (i % type.p === 0) {
-                pops.push(p.population);
+            if (i % type.p === 0 && i !== 0) {
+                if (p.population - oldPop !== type.d) {
+                    return false;
+                }
+                oldPop = p.population;
             }
             p.runGeneration();
         }
-        return pops.every((x, i) => i === 0 || x - pops[i - 1] === type.d);
+        return true;
     } else {
-        let p = new Pattern(pattern);
-        for (let i = 0; i < type.p; i++) {
+        for (let i = 1; i < type.p * 8; i++) {
             p.runGeneration();
+            let q = type.phases[i];
+            if (!q.data.every((x, j) => x === p.data[j]) || q.height !== p.height || q.width !== p.width || q.x !== p.x || p.y !== q.y) {
+                return false;
+            }
         }
-        return p.data.every((x, i) => x === pattern.data[i]) && p.x === type.x && p.y === type.y;
+        return true;
     }
 }
 
@@ -806,9 +851,9 @@ function typeToString(pattern, type) {
 }
 
 function identify(pattern, gens) {
-    let p = new Pattern(pattern);
-    let type = findType(p, gens);
-    let trs = parseTransitions(p.rule);
+    let start = performance.now();
+    let type = findType(pattern, gens);
+    let trs = parseTransitions(pattern.rule);
     let min = trs.slice();
     let max = trs.slice();
     for (let tr of ALL_TRANSITIONS) {
@@ -819,8 +864,10 @@ function identify(pattern, gens) {
         } else {
             newTrs = trs.concat(tr);
         }
+        let p = new Pattern(pattern);
+        p.rule = transitionsToRule(newTrs);
         p.parsedRule = transitionsToParsedRule(newTrs);
-        if (verifyType(p, type)) {
+        if (verifyType(pattern, p, type)) {
             if (index !== -1) {
                 min = min.toSpliced(min.indexOf(tr), 1);
             } else {
@@ -828,7 +875,7 @@ function identify(pattern, gens) {
             }
         }
     }
-    p.parsedRule = parseRule(p.rule);
+    console.log((performance.now() - start) / 1000);
     return {
         type,
         min,
@@ -891,7 +938,7 @@ if (localStorage.intToolsPatterns) {
 }
 
 document.getElementById('add').addEventListener('click', () => {
-    addPattern(identify(Pattern.fromRLE(rleTextarea.value), 5040));
+    addPattern(identify(Pattern.fromRLE(rleTextarea.value), 65536));
 });
 
 document.getElementById('clear').addEventListener('click', () => {
