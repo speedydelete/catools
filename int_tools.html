@@ -938,7 +938,7 @@ if (localStorage.intToolsPatterns) {
 }
 
 document.getElementById('add').addEventListener('click', () => {
-    addPattern(identify(Pattern.fromRLE(rleTextarea.value), 65536));
+    addPattern(identify(Pattern.fromRLE(rleTextarea.value), 4096));
 });
 
 document.getElementById('clear').addEventListener('click', () => {
