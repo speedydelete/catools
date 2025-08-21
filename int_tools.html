@@ -936,6 +936,9 @@ function addPattern(pattern, save = true) {
             return;
         }
         patterns.splice(index, 1);
+        if (checkedPatterns.has(pattern)) {
+            checkedPatterns.delete(pattern);
+        }
         localStorage.intToolsPatterns = JSON.stringify(patterns);
         patternsDiv.removeChild(elt);
     });
