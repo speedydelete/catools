@@ -176,16 +176,25 @@ button {
     color: #3f3f3f;
 }
 
-#patterns input[type=checkbox] {
+#patterns .right {
     position: absolute;
     top: 5px;
+    bottom: 5px;
     right: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: end;
+}
+
+#patterns .x {
+    height: 0.6rem;
+    width: 0.6rem;
+    margin: 3px;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none' viewBox='0 0 16 16'><line x1='0' y1='0' x2='16' y2='16' stroke='black' stroke-width='2' /><line x1='0' y1='16' x2='16' y2='0' stroke='black' stroke-width='2' /></svg>");
 }
 
 #patterns .link {
-    position: absolute;
-    bottom: 5px;
-    right: 5px;
     color: #3366cc;
     user-select: none;
 }
@@ -895,6 +904,7 @@ let patternsDiv = document.getElementById('patterns');
 
 function addPattern(pattern, save = true) {
     patterns.push(pattern);
+    let index = patterns.indexOf(pattern);
     if (save) {
         localStorage.intToolsPatterns = JSON.stringify(patterns);
     }
@@ -907,6 +917,8 @@ function addPattern(pattern, save = true) {
     infoElt.className = 'info';
     infoElt.textContent = `Min: ${pattern.minStr}\nMax: ${pattern.maxStr}`;
     elt.appendChild(infoElt);
+    let right = document.createElement('div');
+    right.className = 'right';
     let checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.addEventListener('change', () => {
@@ -916,7 +928,18 @@ function addPattern(pattern, save = true) {
             checkedPatterns.delete(pattern);
         }
     });
-    elt.appendChild(checkbox);
+    right.appendChild(checkbox);
+    let xButton = document.createElement('div');
+    xButton.className = 'x';
+    xButton.addEventListener('click', () => {
+        if (!confirm(`Are you sure you want to delete \'${pattern.typeStr}\'?`)) {
+            return;
+        }
+        patterns.splice(index, 1);
+        localStorage.intToolsPatterns = JSON.stringify(patterns);
+        patternsDiv.removeChild(elt);
+    });
+    right.appendChild(xButton);
     let link = document.createElement('div');
     link.className = 'link';
     link.textContent = 'Copy';
@@ -924,7 +947,8 @@ function addPattern(pattern, save = true) {
         await navigator.clipboard.writeText(pattern.rle);
         alert('Copied!');
     });
-    elt.appendChild(link);
+    right.appendChild(link);
+    elt.appendChild(right);
     if (patternsDiv.children.length === 0) {
         patternsDiv.appendChild(elt);
     } else {
