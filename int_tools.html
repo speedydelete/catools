@@ -45,6 +45,7 @@ body {
     display: flex;
     flex-flow: row wrap;
     gap: 40px;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 h2 {
@@ -169,6 +170,17 @@ button {
 #patterns .type {
     font-size: 1.25rem;
     font-weight: bold;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1ch;
+}
+
+#patterns .edit {
+    height: 1.01rem;
+    width: 1.01rem;
+    border: none;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 16 16"><line x1="0" y1="16" x2="4" y2="8" stroke="black" /><line x1="0" y1="16" x2="8" y2="12" stroke="black" /><line x1="2" y1="12" x2="4" y2="14" stroke="black" /><line x1="4" y1="8" x2="8" y2="12" stroke="black" /><line x1="4" y1="8" x2="12" y2="0" stroke="black" /><line x1="8" y1="12" x2="16" y2="4" stroke="black" /><line x1="6" y1="10" x2="12" y2="4" stroke="black" /><line x1="10" y1="2" x2="14" y2="6" stroke="black" /><line x1="12" y1="0" x2="16" y2="4" stroke="black" /></svg>');
 }
 
 #patterns .info {
@@ -191,7 +203,7 @@ button {
     height: 0.6rem;
     width: 0.6rem;
     margin: 3px;
-    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none' viewBox='0 0 16 16'><line x1='0' y1='0' x2='16' y2='16' stroke='black' stroke-width='2' /><line x1='0' y1='16' x2='16' y2='0' stroke='black' stroke-width='2' /></svg>");
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 16 16"><line x1="0" y1="0" x2="16" y2="16" stroke="black" stroke-width="2" /><line x1="0" y1="16" x2="16" y2="0" stroke="black" stroke-width="2" /></svg>');
 }
 
 #patterns .link {
@@ -199,15 +211,19 @@ button {
     user-select: none;
 }
 
-#rc {
+#right {
     width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
-#combine {
-    margin: 20px 0;
+#right input {
+    font-family: inherit;
+    font-size: inherit;
 }
 
-#combine-out {
+#combine-out, #reverse-out {
     white-space: pre-wrap;
 }
 
@@ -242,11 +258,16 @@ button {
             </div>
             <div id="patterns"></div>
         </div>
-        <div id="rc">
+        <div id="right">
             <h2>Rule combiner</h2>
             <div>Select added patterns using the checkboxes and then press "Combine" to get the combined min/maxrule!</div>
-            <button id="combine">Combine</button>
+            <div><button id="combine">Combine</button></div>
             <div id="combine-out"></div>
+            <h2>Reverser</h2>
+            <div>Finds the black/white reversal of a rule.</div>
+            <div>Enter rule: <input id="rule" type="text" width="50" /></div>
+            <div><button id="reverse">Reverse</button></div>
+            <div id="reverse-out"></div>
         </div>
         <script>
 
@@ -786,62 +807,42 @@ class Pattern {
 }
 
 
-function findType(pattern, gens) {
+function findType(pattern) {
     let p = new Pattern(pattern);
     let pops = [p.population];
-    for (let i = 0; i < gens; i++) {
+    let phases = [{data: p.data.slice(), x: p.x, y: p.y, height: p.height, width: p.width, population: p.population}];
+    for (let i = 0; i < 4096; i++) {
         p.runGeneration();
+        phases.push({data: p.data.slice(), x: p.x, y: p.y, height: p.height, width: p.width, population: p.population});
         pops.push(p.population);
         if (p.data.every((x, i) => x === pattern.data[i])) {
-            let period = i + 1;
             let x = p.x - pattern.x;
             let y = p.y - pattern.y;
-            let q = new Pattern(pattern);
-            let phases = [];
-            for (let i = 0; i < period + 1; i++) {
-                phases.push({data: q.data.slice(), x: q.x, y: q.y, height: q.height, width: q.width});
-                q.runGeneration();
-            }
-            return {p: period, x, y, phases};
+            return {p: i + 1, x, y, phases};
         }
-        if (i > 8) {
+        if (i >= 16) {
             for (let p = 1; p < i/8; p++) {
                 let fpops = pops.filter((x, i) => i % p === 0);
                 let diffs = fpops.slice(0, -1).map((x, i) => fpops[i + 1] - x);
                 if (diffs.every(x => x === diffs[0])) {
-                    return {linear: true, p, d: diffs[0]};
+                    console.log(pops, fpops, diffs);
+                    return {linear: true, p, d: diffs[0], phases};
                 }
             }
         }
     }
-    return {error: true};
+    return {error: true, phases, p: 256};
 }
 
 function verifyType(pattern, p, type) {
-    if (type.error) {
-        return true;
-    } else if (type.linear) {
-        let oldPop = p.population;
-        for (let i = 0; i <= type.p * 8; i++) {
-            if (i % type.p === 0 && i !== 0) {
-                if (p.population - oldPop !== type.d) {
-                    return false;
-                }
-                oldPop = p.population;
-            }
-            p.runGeneration();
+    for (let i = 1; i < (type.linear ? 8*type.p : type.p + 1); i++) {
+        p.runGeneration();
+        let q = type.phases[i];
+        if (q.population !== p.population || !q.data.every((x, j) => x === p.data[j]) || q.height !== p.height || q.width !== p.width || q.x !== p.x || p.y !== q.y) {
+            return false;
         }
-        return true;
-    } else {
-        for (let i = 1; i < type.p + 1; i++) {
-            p.runGeneration();
-            let q = type.phases[i];
-            if (!q.data.every((x, j) => x === p.data[j]) || q.height !== p.height || q.width !== p.width || q.x !== p.x || p.y !== q.y) {
-                return false;
-            }
-        }
-        return true;
     }
+    return true;
 }
 
 function typeToString(pattern, type) {
@@ -859,9 +860,17 @@ function typeToString(pattern, type) {
     }
 }
 
-function identify(pattern, gens) {
+function redraw() {
+    return new Promise(resolve => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(resolve);
+        });
+    });
+}
+
+function identify(pattern) {
     let start = performance.now();
-    let type = findType(pattern, gens);
+    let type = findType(pattern);
     let trs = parseTransitions(pattern.rule);
     let min = trs.slice();
     let max = trs.slice();
@@ -874,7 +883,6 @@ function identify(pattern, gens) {
             newTrs = trs.concat(tr);
         }
         let p = new Pattern(pattern);
-        p.rule = transitionsToRule(newTrs);
         p.parsedRule = transitionsToParsedRule(newTrs);
         if (verifyType(pattern, p, type)) {
             if (index !== -1) {
@@ -882,8 +890,12 @@ function identify(pattern, gens) {
             } else {
                 max.push(tr);
             }
+            // console.log(transitionsToRule(newTrs), 'succeeded');
+        } else {
+            // console.log(transitionsToRule(newTrs), 'failed');
         }
     }
+    type.phases = undefined;
     return {
         type,
         min,
@@ -911,7 +923,27 @@ function addPattern(pattern, save = true) {
     let elt = document.createElement('div');
     let typeElt = document.createElement('div');
     typeElt.className = 'type';
-    typeElt.textContent = pattern.typeStr;
+    let typeValueElt = document.createElement('span');
+    if (pattern.name) {
+        typeValueElt.textContent = pattern.name + ' (' + pattern.typeStr + ')';
+    } else {
+        typeValueElt.textContent = pattern.typeStr + ' ';
+    }
+    typeElt.appendChild(typeValueElt);
+    let editNameButton = document.createElement('button');
+    editNameButton.className = 'edit';
+    editNameButton.addEventListener('click', () => {
+        pattern.name = prompt('Enter name (or leave blank for no name):');
+        if (pattern.name === '') {
+            pattern.name = undefined;
+        }
+        if (pattern.name) {
+            typeValueElt.textContent = pattern.name + ' (' + pattern.typeStr + ')';
+        } else {
+            typeValueElt.textContent = pattern.typeStr;
+        }
+    });
+    typeElt.appendChild(editNameButton);
     elt.appendChild(typeElt);
     let infoElt = document.createElement('div');
     infoElt.className = 'info';
@@ -963,8 +995,8 @@ if (localStorage.intToolsPatterns) {
     JSON.parse(localStorage.intToolsPatterns).forEach(addPattern);
 }
 
-document.getElementById('add').addEventListener('click', () => {
-    addPattern(identify(Pattern.fromRLE(rleTextarea.value), 4096));
+document.getElementById('add').addEventListener('click', async () => {
+    addPattern(identify(Pattern.fromRLE(rleTextarea.value)));
 });
 
 document.getElementById('clear').addEventListener('click', () => {
@@ -1006,6 +1038,49 @@ document.getElementById('combine').addEventListener('click', () => {
     } else {
         combineOut.textContent = `Min: ${transitionsToRule(Array.from(min))}\nMax: ${transitionsToRule(Array.from(max))}`;
     }
+});
+
+let ruleInput = document.getElementById('rule');
+let ruleOutput = document.getElementById('reverse-out');
+
+const BLACK_WHITE_4 = {
+    c: 'e',
+    e: 'c',
+    i: 't',
+    t: 'i',
+    n: 'r',
+    r: 'n',
+    y: 'j',
+    j: 'y',
+    q: 'w',
+    w: 'q',
+    k: 'k',
+    a: 'a',
+    z: 'z',
+}
+
+document.getElementById('reverse').addEventListener('click', () => {
+    let ruleStr = ruleInput.value;
+    let rule = parseTransitions(ruleStr);
+    let trs = new Set(ALL_TRANSITIONS);
+    for (let tr of parseTransitions(ruleStr)) {
+        trs.delete(tr);
+    }
+    let bw = [];
+    for (let tr of trs) {
+        let bs = tr[0];
+        let num = tr[1];
+        let letter = tr[2];
+        if (num === '4') {
+            letter = BLACK_WHITE_4[letter];
+        } else {
+            num = String(8 - parseInt(num));
+        }
+        bs = bs === 'B' ? 'S' : 'B';
+        bw.push(bs + num + letter);
+    }
+    bw = transitionsToRule(bw);
+    ruleOutput.textContent = `Rule: ${ruleStr}\nBlack/white reversal: ${bw}`;
 });
 
         </script>
