@@ -75,6 +75,13 @@ h1 {
     font-size: 1em;
 }
 
+#buttons {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
 button {
     padding: 3px 6px;
     font-family: inherit;
@@ -99,10 +106,15 @@ button {
         <main>
             <h1>HRT Ruletable Generator</h1>
             <textarea id="rule"></textarea>
-            <button id="generate">Generate</button>
+            <div id="buttons">
+                <button id="generate">Generate</button>
+                <button id="download">Download</button>
+            </div>
             <div id="out"></div>
         </main>
         <script>
+
+'use strict';
 
 const TRANSITIONS = {
     '0': {
@@ -215,19 +227,20 @@ function _parseTransitions(part, fakeMinus) {
     let num = parseInt(part[0]);
     let minus = false;
     let trs = '';
-    for (let char of part.slice(1)) {
+    for (let i = 1; i < part.length; i++) {
+        let char = part[i];
         if ('012345678'.includes(char)) {
             if (fakeMinus) {
                 if (minus) {
-                    out.push(...parseTransition(num, false, trs).map(x => [true, ...x]));
+                    out.push(...parseTransition(num, false, trs).map(x => [true, x]));
                 } else {
-                    out.push(...parseTransition(num, false, trs).map(x => [false, ...x]));
+                    out.push(...parseTransition(num, false, trs).map(x => [false, x]));
                 }
             } else {
                 out.push(...parseTransition(num, minus, trs));
             }
             num = parseInt(char);
-            minus = false;
+            minus = fakeMinus ? part[i - 1] === '-' : false;
             trs = '';
         } else if (char === '-') {
             minus = true;
@@ -274,34 +287,34 @@ function parseTransitions(rule, extraNeighbors, fakeMinus) {
     } else {
         let out = [];
         let aUsed = false;
-        for (let tr of birth) {
-            for (let x of TRANSITIONS2[tr]) {
-                out.push(['0', ...x, ...extras, '1']);
-            }
-        }
-        for (let tr of survive) {
-            for (let x of TRANSITIONS2[tr]) {
-                out.push(['1', ...x, ...extras, '1']);
-            }
-        }
-        // for (let tr of ALL_TRANSITIONS) {
-        //     let start;
-        //     if (survive.includes(tr)) {
-        //         if (birth.includes(tr)) {
-        //             aUsed = true;
-        //             start = 'a';
-        //         } else {
-        //             start = '1';
-        //         }
-        //     } else if (birth.includes(tr)) {
-        //         start = '0';
-        //     } else {
-        //         continue;
-        //     }
+        // for (let tr of birth) {
         //     for (let x of TRANSITIONS2[tr]) {
-        //         out.push([start, ...x, ...extras, '1']);
+        //         out.push(['0', ...x, ...extras, '1']);
         //     }
         // }
+        // for (let tr of survive) {
+        //     for (let x of TRANSITIONS2[tr]) {
+        //         out.push(['1', ...x, ...extras, '1']);
+        //     }
+        // }
+        for (let tr of ALL_TRANSITIONS) {
+            let start;
+            if (survive.includes(tr)) {
+                if (birth.includes(tr)) {
+                    aUsed = true;
+                    start = 'a';
+                } else {
+                    start = '1';
+                }
+            } else if (birth.includes(tr)) {
+                start = '0';
+            } else {
+                continue;
+            }
+            for (let x of TRANSITIONS2[tr]) {
+                out.push([start, ...x, ...extras, '1']);
+            }
+        }
         return [out, aUsed];
     }
 }
@@ -315,8 +328,8 @@ function combinations(n, c) {
         return [Array.from({length: n}, () => 1)];
     } else {
         return [
-            ...combinations(n - 1, c - 1).map(x => [1, x]),
-            ...combinations(n - 1, c).map(x => [0, x]),
+            ...combinations(n - 1, c - 1).map(x => [1, ...x]),
+            ...combinations(n - 1, c).map(x => [0, ...x]),
         ];
     }
 }
@@ -330,10 +343,25 @@ function parseExtra(data) {
     }
     data = data.slice(1);
     let neighbors = [];
+    let modifications = [];
+    let cns;
+    let preSections = data.split(/(,=|,|=)(?=(?:[^()]*\([^()]*\))*[^()]*$)/g);
     let sections = [];
-    for (let section of data.split(/,(?=(?:[^()]*\([^()]*\))*[^()]*$)/g)) {
+    let prefix = '';
+    for (let section of preSections) {
+        if (section === '=' || section === ',=') {
+            prefix = '=';
+            continue;
+        } else if (section === ',') {
+            continue;
+        } else {
+            sections.push(prefix + section);
+            prefix = '';
+        }
+    }
+    for (let section of sections) {
         if (section.startsWith('(')) {
-            let ns = section.slice(1, -1).split(')(').map(x => x.split(',').map(y => parseInt(y)));
+            let ns = section.slice(1, -1).split(')(').map(x => x.split(/[,.; /]/).map(y => parseInt(y)));
             cns = [];
             for (let n of ns) {
                 let index = neighbors.indexOf(x => x[0] === n[0] && x[1] === n[1]);
@@ -351,14 +379,26 @@ function parseExtra(data) {
             if (b === undefined) {
                 error(`Expected colon`);
             }
-            sections.push([cns.slice(), parseInt(a.slice(1)), b]);
+            let num = a.slice(1);
+            let nums = [];
+            if (num.includes('-') || num.includes('+')) {
+                let [start, end] = num.split(/[-+]/);
+                start = start === '' ? 0 : parseInt(start);
+                end = end === '' ? cns.length : parseInt(end);
+                for (let i = start; i <= end; i++) {
+                    nums.push(i);
+                }
+            } else {
+                nums.push(parseInt(num));
+            }
+            modifications.push([cns.slice(), nums, b]);
         } else {
             error(`Expected equals sign or left parenthesis`);
         }
     }
     let out = [];
     let extras = Array.from({length: neighbors.length}, (_, i) => 'a' + i);
-    for (let [ns, num, rule] of sections) {
+    for (let [ns, nums, rule] of modifications) {
         let [birth, survive] = parseTransitions(rule, 0, true);
         let trs = [];
         for (let [minus, tr] of birth) {
@@ -372,17 +412,18 @@ function parseExtra(data) {
                 trs.push(['1', ...x, ...extras, minus ? '0' : '1']);
             }
         }
-        for (let tr of trs) {
-            for (let str of combinations(neighbors.length, ns.length)) {
-                let tr2 = tr.slice();
-                for (let i = 0; i < neighbors.length; i++) {
-                    tr2[ns[i]] = str[i];
+        for (let num of nums) {
+            for (let str of combinations(ns.length, num)) {
+                for (let tr of trs) {
+                    tr = tr.slice();
+                    for (let i = 0; i < ns.length; i++) {
+                        tr[ns[i]] = str[i];
+                    }
+                    out.push(tr);
                 }
-                out.push(tr2);
             }
         }
     }
-    console.log(out.slice());
     return [out, neighbors.map(x => `(${x[0]}, ${x[1]})`)];
 }
 
@@ -395,7 +436,7 @@ function generateTable(rule) {
     let [trs, neighbors] = parseExtra(sections.slice(2).join('/'));
     let [trs2, aUsed] = parseTransitions(sections[0] + '/' + sections[1], neighbors.length);
     trs.push(...trs2);
-    let neighborhood = ['(-1, -1)', '(0, -1)', '(0, -1)', '(-1, 0)', '(1, 0)', '(-1, 1)', '(0, 1)', '(1, 1)', ...neighbors];
+    let neighborhood = ['(-1, -1)', '(0, -1)', '(1, -1)', '(-1, 0)', '(1, 0)', '(-1, 1)', '(0, 1)', '(1, 1)', ...neighbors];
     trs.push(['1', ...Array.from({length: neighborhood.length}, (_, i) => 'a' + i), 0]);
     let out = `@RULE ${rule}\n@TABLE\nn_states:2\nneighborhood:[${neighborhood.join(', ')}]\nsymmetries:rotate4reflect\n`;
     if (aUsed) {
@@ -406,7 +447,7 @@ function generateTable(rule) {
     return out;
 }
 
-document.getElementById('generate').addEventListener('click', () => {
+function generateTableFromInput() {
     let rule = document.getElementById('rule').value;
     let out;
     try {
@@ -418,7 +459,24 @@ document.getElementById('generate').addEventListener('click', () => {
             throw error;
         }
     }
-    document.getElementById('out').textContent = out;
+    return out;
+}
+
+document.getElementById('generate').addEventListener('click', () => {
+    document.getElementById('out').textContent = generateTableFromInput();
+});
+
+document.getElementById('download').addEventListener('click', () => {
+    let table = generateTableFromInput();
+    let blob = new Blob([table]);
+    let url = URL.createObjectURL(blob);
+    let link = document.createElement('a');
+    link.href = url;
+    link.download = document.getElementById('rule').value + '.rule';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 })
 
         </script>
