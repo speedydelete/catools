@@ -91,13 +91,20 @@ button {
     border: 1px solid black;
 }
 
-#out {
+#out, #help-text {
     flex: 1;
     max-width: 60ch;
     max-height: calc(100% - 186px - 8em);
     overflow-y: auto;
     overflow-wrap: wrap;
+}
+
+#out {
     white-space: pre-wrap;
+}
+
+#help-text {
+    display: none;
 }
 
         </style>
@@ -109,8 +116,18 @@ button {
             <div id="buttons">
                 <button id="generate">Generate</button>
                 <button id="download">Download</button>
+                <button id="help">Help</button>
             </div>
             <div id="out"></div>
+            <div id="help-text">
+                HRT rules are an extension of INT rules that allow for cells beyond the range-1 Moore neighborhood to have an effect on the transitions.<br><br>
+                Here is an example: B3/S23/?(3,0)(2,-1)(2,1)=3:S2-i<br><br>
+                This is B3/S23 but if the number of alive cells at (3,0), (2,-1), and (2,1) equals 3, S2i is removed.<br><br>
+                This is applied for all reflections and rotations, so the rule is isotropic.<br><br>
+                You can also chain multiple sections together, like B3/S23/?(3,0)(2,-1)(2,1)=3:S2-i,(4,0)(-4,0)(0,4)(0,-4)=2:B8=3:S8<br><br>
+                Ranges can also be used after = and before :, like =2-:B8 (2 to the number of cells), =-2:B8 (0 to 2 cells), or =2-3:B8 (2 or 3 cells).<br><br>
+                These rules can be loaded in CAViewer by putting the rule file in the same folder as the CAViewer jar file, and entering the name of the file (including the .rule at the end).<br><br>
+            </div>
         </main>
         <script>
 
@@ -287,16 +304,6 @@ function parseTransitions(rule, extraNeighbors, fakeMinus) {
     } else {
         let out = [];
         let aUsed = false;
-        // for (let tr of birth) {
-        //     for (let x of TRANSITIONS2[tr]) {
-        //         out.push(['0', ...x, ...extras, '1']);
-        //     }
-        // }
-        // for (let tr of survive) {
-        //     for (let x of TRANSITIONS2[tr]) {
-        //         out.push(['1', ...x, ...extras, '1']);
-        //     }
-        // }
         for (let tr of ALL_TRANSITIONS) {
             let start;
             if (survive.includes(tr)) {
@@ -462,8 +469,13 @@ function generateTableFromInput() {
     return out;
 }
 
+let outElt = document.getElementById('out');
+let helpElt = document.getElementById('help-text');
+
 document.getElementById('generate').addEventListener('click', () => {
-    document.getElementById('out').textContent = generateTableFromInput();
+    outElt.textContent = generateTableFromInput();
+    outElt.style.display = 'block';
+    helpElt.style.display = 'none';
 });
 
 document.getElementById('download').addEventListener('click', () => {
@@ -477,7 +489,13 @@ document.getElementById('download').addEventListener('click', () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-})
+});
+
+document.getElementById('help').addEventListener('click', () => {
+    outElt.textContent = '';
+    outElt.style.display = 'none';
+    helpElt.style.display = 'block';
+});
 
         </script>
     </body>
