@@ -154,6 +154,11 @@ button {
     display: none;
 }
 
+#phases {
+    height: 1.25em;
+    width: 1.25em;
+}
+
 #patterns {
     flex-grow: 1;
     min-height: 0;
@@ -266,6 +271,10 @@ button {
                         <label for="gens">Generations: </label>
                         <input type="number" id="gens" value="4096" />
                     </div>
+                    <Div>
+                        <label for="phases">Check phases: </label>
+                        <input type="checkbox" id="phases" checked="true" />
+                    </Div>
                     <button id="clear">Clear</button>
                 </div>
             </div>
@@ -825,7 +834,7 @@ function findType(pattern) {
     let pops = [p.population];
     let phases = [{data: p.data.slice(), x: p.x, y: p.y, height: p.height, width: p.width, population: p.population}];
     let max = document.getElementById('gens').value;
-    for (let i = 0; i < max; i++) {
+    for (let i = 0; i < max + 1; i++) {
         p.runGeneration();
         phases.push({data: p.data.slice(), x: p.x, y: p.y, height: p.height, width: p.width, population: p.population});
         pops.push(p.population);
@@ -845,18 +854,34 @@ function findType(pattern) {
             }
         }
     }
-    return {error: true, phases, p: 256};
+    return {error: true, phases, p: max};
 }
 
 function verifyType(pattern, p, type) {
-    for (let i = 1; i < (type.linear ? 8*type.p : type.p + 1); i++) {
-        p.runGeneration();
-        let q = type.phases[i];
-        if (q.population !== p.population || !q.data.every((x, j) => x === p.data[j]) || q.height !== p.height || q.width !== p.width || q.x !== p.x || p.y !== q.y) {
-            return false;
+    if (document.getElementById('phases').checked || type.error || type.linear) {
+        for (let i = 1; i < (type.linear ? 8*type.p : type.p + 1); i++) {
+            p.runGeneration();
+            let q = type.phases[i];
+            if (q.population !== p.population || !q.data.every((x, j) => x === p.data[j]) || q.height !== p.height || q.width !== p.width || q.x !== p.x || p.y !== q.y) {
+                return false;
+            }
         }
+        return true;
+    } else {
+        let i;
+        for (i = 1; i < type.p + 1; i++) {
+            p.runGeneration();
+        }
+        let q = type.phases[i];
+        if (p.data.every((x, i) => x === pattern.data[i])) {
+            let x = p.x - pattern.x;
+            let y = p.y - pattern.y;
+            if (x === type.x && y === p.y) {
+                return true;
+            }
+        }
+        return false;
     }
-    return true;
 }
 
 function typeToString(pattern, type) {
