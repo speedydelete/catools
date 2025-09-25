@@ -95,6 +95,8 @@ return '{' + out.join(', ') + '}';
 */
 const uint8_t transitions[512] = {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1};
 
+// debug mode enables a ton of logging information
+// #define DEBUG
 
 uint32 engines;
 uint16 max_x_sep;
@@ -140,14 +142,16 @@ static inline bool run_row(uint32 i, uint16* lowX, uint16* highX) {
         tr |= (uint16)data[i - WIDTHVALUE + 1] << 2;
         tr |= (uint16)data[i + 1] << 1;
         tr |= (uint16)data[i + WIDTHVALUE + 1];
+        #ifdef DEBUG
         printf("transition: %"PRIu8" %"PRIuFAST16" %"PRIu8"\n", data[i], tr, transitions[tr]);
+        #endif
         value = transitions[tr];
         if (value) {
             any_changed = true;
             if (x < *lowX) {
                 *lowX = x;
             }
-            if (i > *highX) {
+            if (x > *highX) {
                 *highX = x;
             }
         }
@@ -165,7 +169,9 @@ bool run_generation() {
     bool any_changed;
     uint32 i = ((top - 1) << WIDTH) + left - 1;
     for (uint16 y = top - 1; y <= bottom; y++) {
+        #ifdef DEBUG
         printf("i: %"PRIuFAST32"\n", i);
+        #endif
         any_changed = run_row(i, &lowX, &highX);
         if (any_changed) {
             if (y < lowY) {
@@ -211,7 +217,9 @@ void generate_phases() {
         uint16 height = bottom - top;
         uint16 width = right - left;
         uint32 size = height * width;
-        // printf("%"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16"\n", top, bottom, left, right);
+        #ifdef DEBUG
+        printf("%"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16"\n", top, bottom, left, right);
+        #endif
         engine_phase* phase = malloc(sizeof(engine_phase) + size);
         phase->height = height;
         phase->width = width;
@@ -289,6 +297,7 @@ typedef struct engine_info {
 engine_info* global_engines;
 
 void create_soup() {
+    clear();
     uint32 stop = ((uint32)ip_bottom << WIDTH) + STARTX;
     uint32 max = (STARTY << WIDTH) + ip_right;
     for (uint32 start = (STARTY << WIDTH) + STARTX; start <= stop; start += WIDTHVALUE) {
@@ -613,7 +622,9 @@ void run_soup() {
         uint16 pop = 0;
         uint32 stop = ((uint32)bottom << WIDTH) + left;
         uint32 max = ((uint32)top << WIDTH) + right;
+        #ifdef DEBUG
         printf("BB: %"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16"\n", top, bottom, left, right);
+        #endif
         for (uint32 start = (top << WIDTH) + left; start <= stop; start += WIDTHVALUE) {
             for (uint32 i = start; i < max; i++) {
                 if (data[i]) {
@@ -622,7 +633,9 @@ void run_soup() {
             }
             max += WIDTHVALUE;
         }
+        #ifdef DEBUG
         printf("Running generation %"PRIuFAST16" (population %"PRIuFAST32")\n", i, pop);
+        #endif
         if (!run_generation()) {
             break;
         }
