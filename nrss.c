@@ -96,7 +96,20 @@ return '{' + out.join(', ') + '}';
 const uint8_t transitions[512] = {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1};
 
 // debug mode enables a ton of logging information
-// #define DEBUG
+#define DEBUG
+
+
+#ifdef DEBUG
+#define malloc(size) ({ \
+    void* out = malloc((size)); \
+    printf("Allocating %lu bytes: %p\n", (size), out); \
+    out; \
+})
+#define free(ptr) ({ \
+    printf("Freeing %p\n", (ptr)); \
+    free((ptr)); \
+})
+#endif
 
 uint32 engines;
 uint16 max_x_sep;
@@ -114,7 +127,7 @@ uint16 right = 0;
 void clear() {
     uint32 stop = ((uint32)bottom << WIDTH) + left;
     uint32 max = ((uint32)top << WIDTH) + right;
-    for (uint32 start = (top << WIDTH) + left; start <= stop; start += WIDTHVALUE) {
+    for (uint32 start = ((uint32)top << WIDTH) + left; start <= stop; start += WIDTHVALUE) {
         for (uint32 i = start; i < max; i++) {
             data[i] = 0;
         }
@@ -136,15 +149,15 @@ static inline bool run_row(uint32 i, uint16* lowX, uint16* highX) {
     uint32 max = i - left + right + 1;
     uint8_t value;
     bool any_changed = false;
-    uint16 x = left;
+    uint16 x = left - 1;
     for (; i <= max; i++) {
         tr = (tr << 3) & 511;
         tr |= (uint16)data[i - WIDTHVALUE + 1] << 2;
         tr |= (uint16)data[i + 1] << 1;
         tr |= (uint16)data[i + WIDTHVALUE + 1];
-        #ifdef DEBUG
-        printf("transition: %"PRIu8" %"PRIuFAST16" %"PRIu8"\n", data[i], tr, transitions[tr]);
-        #endif
+        // #ifdef DEBUG
+        // printf("transition: %"PRIu8" %"PRIuFAST16" %"PRIu8"\n", data[i], tr, transitions[tr]);
+        // #endif
         value = transitions[tr];
         if (value) {
             any_changed = true;
@@ -169,10 +182,11 @@ bool run_generation() {
     bool any_changed;
     uint32 i = ((top - 1) << WIDTH) + left - 1;
     for (uint16 y = top - 1; y <= bottom; y++) {
-        #ifdef DEBUG
-        printf("i: %"PRIuFAST32"\n", i);
-        #endif
+        // #ifdef DEBUG
+        // printf("i: %"PRIuFAST32"\n", i);
+        // #endif
         any_changed = run_row(i, &lowX, &highX);
+        // printf("%"PRIuFAST16": %d\n", y, any_changed);
         if (any_changed) {
             if (y < lowY) {
                 lowY = y;
@@ -183,10 +197,12 @@ bool run_generation() {
         }
         i += WIDTHVALUE;
     }
+    // idk why this is needed, someone should figure out why because this probably slows it down
+    clear();
     top = lowY;
-    bottom = highY;
+    bottom = highY + 1;
     left = lowX;
-    right = highX;
+    right = highX + 1;
     uint32 stop = ((uint32)bottom << WIDTH) + left;
     uint32 max = ((uint32)top << WIDTH) + right;
     for (uint32 start = (top << WIDTH) + left; start <= stop; start += WIDTHVALUE) {
@@ -208,6 +224,7 @@ typedef struct engine_phase {
 engine_phase* engine_phases[ENGINEPHASES];
 
 void generate_phases() {
+    clear();
     put_engine(data, (STARTY << WIDTH) + STARTX);
     top = STARTY;
     bottom = STARTY + ENGINEHEIGHT;
@@ -217,9 +234,9 @@ void generate_phases() {
         uint16 height = bottom - top;
         uint16 width = right - left;
         uint32 size = height * width;
-        #ifdef DEBUG
-        printf("%"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16"\n", top, bottom, left, right);
-        #endif
+        // #ifdef DEBUG
+        // printf("%"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16"\n", top, bottom, left, right);
+        // #endif
         engine_phase* phase = malloc(sizeof(engine_phase) + size);
         phase->height = height;
         phase->width = width;
@@ -306,7 +323,7 @@ void create_soup() {
         }
         max += WIDTHVALUE;
     }
-    put_engine(initial_pattern, (STARTY << WIDTH) + STARTX);
+    // put_engine(initial_pattern, (STARTY << WIDTH) + STARTX);
     uint16 y = STARTY;
     uint16 x;
     engine_phase* phase;
@@ -332,7 +349,7 @@ void create_soup() {
             engine_info engine = global_engines[i];
             y += engine.y;
             phase = engine_phases[engine.phase];
-            // printf("Placing phase %"PRIuFAST16" at x = %"PRIuFAST16", y = %"PRIuFAST16"\n", engine.phase, engine.x, engine.y);
+            // printf("Placing phase %"PRIuFAST16" at x = %"PRIuFAST16", y = %"PRIuFAST16"\n", engine.phase, engine.x + STARTX, engine.y + y);
             for (uint16 cy = 0; cy < phase->height; cy++) {
                 uint32 i = ((y + cy) << WIDTH) + STARTX + engine.x;
                 uint16 j = cy * phase->width;
@@ -404,6 +421,9 @@ void cache_pattern_data() {
     uint32 size = height * width;
     uint32 population = 0;
     uint32 data_length = size >> 5;
+    if (size % 32 != 0) {
+        data_length++;
+    }
     if (data_length == 0) {
         data_length = 1;
     }
@@ -622,9 +642,6 @@ void run_soup() {
         uint16 pop = 0;
         uint32 stop = ((uint32)bottom << WIDTH) + left;
         uint32 max = ((uint32)top << WIDTH) + right;
-        #ifdef DEBUG
-        printf("BB: %"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16"\n", top, bottom, left, right);
-        #endif
         for (uint32 start = (top << WIDTH) + left; start <= stop; start += WIDTHVALUE) {
             for (uint32 i = start; i < max; i++) {
                 if (data[i]) {
@@ -634,7 +651,24 @@ void run_soup() {
             max += WIDTHVALUE;
         }
         #ifdef DEBUG
-        printf("Running generation %"PRIuFAST16" (population %"PRIuFAST32")\n", i, pop);
+        #define topm1 (top - 1)
+        #define bottomp1 (bottom + 1)
+        #define leftm1 (left - 1)
+        #define rightp1 (right + 1)
+        #define heightp2 (bottomp1 - topm1)
+        #define widthp2 (rightp1 - leftm1)
+        printf("Running generation %"PRIuFAST16" (population %"PRIuFAST32")\nx = %"PRIuFAST16", y = %"PRIuFAST16"\n", i, pop, widthp2, heightp2);
+        char* row = malloc((widthp2 + 1) * sizeof(char));
+        row[widthp2] = '\0';
+        for (uint16 y = topm1; y < bottomp1; y++) {
+            uint32 i = ((uint32)y << WIDTH) + leftm1;
+            for (uint16 x = 0; x < widthp2; x++) {
+                row[x] = data[i] ? '1' : '0';
+                i++;
+            }
+            printf("%s\n", row);
+        }
+        free(row);
         #endif
         if (!run_generation()) {
             break;
