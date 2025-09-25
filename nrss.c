@@ -35,6 +35,15 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 #define HEIGHT 12
 #define WIDTH 12
 
+// don't change
+typedef uint_fast16_t uint16;
+typedef uint_fast32_t uint32;
+typedef uint_fast64_t uint64;
+#define HEIGHTVALUE (1 << HEIGHT)
+#define WIDTHVALUE (1 << WIDTH)
+#define SIZE (HEIGHT + WIDTH)
+#define SIZEVALUE (1 << SIZE)
+
 // starting position
 #define STARTX 64
 #define STARTY ((1 << HEIGHT) / 2 - 64)
@@ -46,12 +55,12 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 // put an engine in the data array at the specified position
 // i is the array index of the (x, y) coordinates of where to put the engine
 // the default one is 2o$o$2o!
-static inline void put_engine(uint8_t data[], uint_fast32_t i) {
+static inline void put_engine(uint8_t data[], uint32 i) {
     data[i] = 1;
     data[i + 1] = 1;
-    data[i + WIDTH] = 1;
-    data[i + WIDTH + WIDTH] = 1;
-    data[i + WIDTH + WIDTH + 1] = 1;
+    data[i + WIDTHVALUE] = 1;
+    data[i + WIDTHVALUE + WIDTHVALUE] = 1;
+    data[i + WIDTHVALUE + WIDTHVALUE + 1] = 1;
 }
 
 // engine dimensions
@@ -59,7 +68,7 @@ static inline void put_engine(uint8_t data[], uint_fast32_t i) {
 #define ENGINEWIDTH 2
 
 // the number of phases of the engine
-#define ENGINEPHASES 100
+#define ENGINEPHASES 1
 
 // whether to skip oscillators, comment out to keep oscillators
 #define SKIPOSCILLATORS
@@ -90,15 +99,6 @@ return '{' + out.join(', ') + '}';
 const uint8_t transitions[512] = {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1};
 
 
-typedef uint_fast16_t uint16;
-typedef uint_fast32_t uint32;
-typedef uint_fast64_t uint64;
-
-#define HEIGHTVALUE (1 << HEIGHT)
-#define WIDTHVALUE (1 << WIDTH)
-#define SIZE (HEIGHT + WIDTH)
-#define SIZEVALUE (1 << SIZE)
-
 uint32 engines;
 uint16 max_x_sep;
 uint16 max_period;
@@ -128,20 +128,21 @@ uint8_t temp_data[SIZEVALUE];
 
 static inline bool run_row(uint32 i, uint16* lowX, uint16* highX) {
     uint16 tr = 0;
-    tr |= (uint16)data[i - WIDTH - 1] << 5;
+    tr |= (uint16)data[i - WIDTHVALUE - 1] << 5;
     tr |= (uint16)data[i - 1] << 4;
-    tr |= (uint16)data[i + WIDTH - 1] << 3;
-    tr |= (uint16)data[i - WIDTH] << 2;
+    tr |= (uint16)data[i + WIDTHVALUE - 1] << 3;
+    tr |= (uint16)data[i - WIDTHVALUE] << 2;
     tr |= (uint16)data[i] << 1;
-    tr |= (uint16)data[i + WIDTH];
-    uint32 max = i - left + right + 2;
+    tr |= (uint16)data[i + WIDTHVALUE];
+    uint32 max = i - left + right + 1;
     uint8_t value;
     bool any_changed = false;
-    for (i++; i <= max; i++) {
+    for (; i <= max; i++) {
         tr = (tr << 3) & 511;
-        tr |= (uint16)data[i - WIDTH + 1] << 2;
+        tr |= (uint16)data[i - WIDTHVALUE + 1] << 2;
         tr |= (uint16)data[i + 1] << 1;
-        tr |= (uint16)data[i + WIDTH + 1];
+        tr |= (uint16)data[i + WIDTHVALUE + 1];
+        // printf("transition: %"PRIu8" %"PRIuFAST16" %"PRIu8"\n", data[i], tr, transitions[tr]);
         value = transitions[tr];
         if (value) {
             any_changed = true;
@@ -158,13 +159,14 @@ static inline bool run_row(uint32 i, uint16* lowX, uint16* highX) {
 }
 
 bool run_generation() {
-    uint16 lowX = WIDTH;
+    uint16 lowX = WIDTHVALUE;
     uint16 highX = 0;
-    uint16 lowY = HEIGHT;
+    uint16 lowY = HEIGHTVALUE;
     uint16 highY = 0;
     bool any_changed;
     uint32 i = ((top - 1) << WIDTH) + left - 1;
     for (uint16 y = top - 1; y <= bottom + 1; y++) {
+        // printf("i: %"PRIuFAST32"\n", i);
         any_changed = run_row(i, &lowX, &highX);
         if (any_changed) {
             if (y < lowY) {
@@ -206,12 +208,11 @@ void generate_phases() {
     bottom = STARTY + ENGINEHEIGHT;
     left = STARTX;
     right = STARTX + ENGINEWIDTH;
-    printf("%"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16"\n", top, bottom, left, right);
     for (int i = 0; i < ENGINEPHASES; i++) {
         uint16 height = bottom - top;
         uint16 width = right - left;
         uint32 size = height * width;
-        printf("%"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16"\n", top, bottom, left, right);
+        // printf("%"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16" %"PRIuFAST16"\n", top, bottom, left, right);
         engine_phase* phase = malloc(sizeof(engine_phase) + size);
         phase->height = height;
         phase->width = width;
@@ -313,31 +314,49 @@ void create_soup() {
             }
         }
     } else {
-        for (int i = engines - 2; i >= 0; i++) {
-            engine_info engine = global_engines[i];
-            if (engine.y != MAXY) {
-                engine.y++;
-                break;
-            } else {
-                engine.y = MINY;
-                if (engine.x != STARTX + max_x_sep) {
-                    engine.x++;
-                    break;
-                } else {
-                    engine.x = STARTX;
-                    engine.phase = (engine.phase + 1) % ENGINEPHASES;
-                }
-            }
-        }
-        for (uint16 i = 0; i < engines - 1; i++) {
+        top = STARTY;
+        bottom = 0;
+        left = STARTX;
+        right = 0;
+        for (uint16 i = 0; i < engines; i++) {
             engine_info engine = global_engines[i];
             y += engine.y;
             phase = engine_phases[engine.phase];
+            // printf("Placing phase %"PRIuFAST16" at x = %"PRIuFAST16", y = %"PRIuFAST16"\n", engine.phase, engine.x, engine.y);
             for (uint16 cy = 0; cy < phase->height; cy++) {
-                uint32 i = (y + cy) << WIDTH;
-                for (uint16 cx = 0; cx < phase->width; cx++) {
-                    initial_pattern[i] = phase->data[i];
+                uint32 i = ((y + cy) << WIDTH) + STARTX + engine.x;
+                uint16 j = cy * phase->width;
+                uint16 end = j + phase->height;
+                for (; j < end; j++) {
+                    initial_pattern[i] = phase->data[j];
                     i++;
+                }
+            }
+            if (engine.x + phase->width > right) {
+                right = engine.x + phase->width;
+            }
+            if (engine.y + phase->height > bottom) {
+                bottom = engine.y + phase->height;
+            }
+            // printf("Phase placed\n");
+        }
+        for (uint16 i = engines - 1; i >= 0; i++) {
+            engine_info engine = global_engines[i];
+            if (i == 0) {
+                engine.phase++;
+            } else {
+                if (engine.y != MAXY) {
+                    engine.y++;
+                    break;
+                } else {
+                    engine.y = MINY;
+                    if (engine.x != STARTX + max_x_sep) {
+                        engine.x++;
+                        break;
+                    } else {
+                        engine.x = STARTX;
+                        engine.phase = (engine.phase + 1) % ENGINEPHASES;
+                    }
                 }
             }
         }
@@ -598,13 +617,14 @@ void run_soup() {
 clock_t start_clock;
 clock_t prev_clock;
 uint64_t soups;
+uint64_t prev_soups;
 int64_t max_soups;
 
 void show_status_force(clock_t current) {
     if (max_soups < 0) {
-        printf("%"PRIu64" soups completed (%.3f soups/second current, %.3f overall)\n", soups, (double)(current - prev_clock) / CLOCKS_PER_SEC * 100, (double)(current - prev_clock) / CLOCKS_PER_SEC * 100);
+        printf("%"PRIu64" soups completed (%.3f soups/second current, %.3f overall)\n", soups, (double)(soups - prev_soups) / ((double)(current - prev_clock) / CLOCKS_PER_SEC) * 100, (double)soups / ((double)(current - prev_clock) / CLOCKS_PER_SEC) * 100);
     } else {
-        printf("%"PRIu64" soups completed (%.3f%%, %.3f soups/second current, %.3f overall)\n", soups, (double)soups / (double)max_soups * 100, (double)(current - prev_clock) / CLOCKS_PER_SEC * 100, (double)(current - prev_clock) / CLOCKS_PER_SEC * 100);
+        printf("%"PRIu64" soups completed (%.3f%%, %.3f soups/second current, %.3f overall)\n", soups, (double)soups / (double)max_soups * 100, (double)(soups - prev_soups) / ((double)(current - prev_clock) / CLOCKS_PER_SEC) * 100, (double)soups / ((double)(current - prev_clock) / CLOCKS_PER_SEC) * 100);
     }
 }
 
@@ -613,6 +633,7 @@ void show_status() {
     if ((((double)current - (double)prev_clock) / (double)CLOCKS_PER_SEC) >= 10) {
         show_status_force(current);
         prev_clock = current;
+        prev_soups = soups;
     }
 }
 
@@ -623,6 +644,7 @@ void cleanup() {
         free(engine_phases[i]);
     }
     free(rles);
+    free(global_engines);
 }
 
 void on_sigint(int something) {
@@ -643,10 +665,18 @@ int main(int argc, char** argv) {
     previous_generation_cache = malloc(max_period * sizeof(pattern_data*));
     generate_phases();
     read_state();
+    global_engines = malloc(sizeof(engine_info) * engines);
+    for (int i = 0; i < engines; i++) {
+        global_engines[i].x = 0;
+        global_engines[i].y = i == 0 ? 0 : MINY;
+        global_engines[i].phase = 0;
+    }
     prev_clock = clock();
+    prev_soups = 0;
     signal(SIGINT, on_sigint);
     if (use_random_soups) {
         max_soups = -1;
+        printf("Starting search\n");
         while (true) {
             run_soup();
             soups++;
@@ -657,6 +687,7 @@ int main(int argc, char** argv) {
         for (int i = 0; i < engines - 1; i++) {
             max_soups *= (int64_t)ENGINEPHASES * (int64_t)(MAXY - MINY) * (int64_t)max_x_sep;
         }
+        printf("Searching %"PRIu64" soups\n", max_soups);
         for (uint64_t i = 0; i < max_soups; i++) {
             run_soup();
             soups++;
