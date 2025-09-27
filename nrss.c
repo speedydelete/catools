@@ -64,7 +64,7 @@ static inline void put_engine(uint8_t data[], uint32 i) {
 #define ENGINEWIDTH 2
 
 // the number of phases of the engine
-#define ENGINEPHASES 1
+#define ENGINEPHASES 128
 
 // whether to skip oscillators
 #define SKIPOSCILLATORS 1
@@ -76,7 +76,7 @@ static inline void put_engine(uint8_t data[], uint32 i) {
 #define MAXSHIPS 4096
 
 // generations between phase checks
-#define CHECKINTERVAL 16
+#define CHECKINTERVAL 64
 
 // whether to reduce the period to lowest terms
 #define REDUCEPERIOD 1
@@ -794,7 +794,9 @@ void run_soup() {
     //     printf("%s$", row);
     // }
     // free(row);
-    for (uint16 i = 0; i < max_period; i++) {
+    uint16 i;
+    // clock_t start_time = clock();
+    for (i = 0; i < max_period; i++) {
         uint16 pop = 0;
         uint32 stop = ((uint32)bottom << WIDTH) + left;
         uint32 max = ((uint32)top << WIDTH) + right;
@@ -870,6 +872,7 @@ void run_soup() {
     for (uint16 i = 0; i < phase_number; i++) {
         free(phase_cache[i]);
     }
+    // printf("Soup stabilized after %"PRIuFAST16" generations (%.3f seconds)\n", i, (double)(clock() - start_time) / (double)CLOCKS_PER_SEC);
     soup_count++;
 }
 
