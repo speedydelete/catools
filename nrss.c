@@ -1,3 +1,4 @@
+
 /*
 Copyright 2025 speedydelete
 
@@ -83,6 +84,13 @@ static inline void put_engine(uint8_t data[], uint32 i) {
 
 // minimum period
 #define MINPERIOD 3
+
+// whether to show duplicate messages
+#define SHOWDUPLICATES 1
+
+// no duplicate message showing for these speeds, set to 0 to disable
+#define MOSTCOMMONSPEED (((uint64_t)469 << 32) | (uint64_t)64)
+#define MOSTCOMMONSPEED2 (((uint64_t)73 << 32) | (uint64_t)10)
 
 // uncomment to make it work in stupid online C compilers
 // #define BRUH
@@ -697,7 +705,11 @@ void add_ship(uint64_t speed) {
     #if SKIPDUPLICATES > 0
     for (uint16 i = 0; i < ships; i++) {
         if (speeds[i] == speed) {
-            // printf("Duplicate %"PRIu64"c/%"PRIu64" found\n", speed & 65535, speed >> 32);
+            #if SHOWDUPLICATES > 0
+            if (speed != MOSTCOMMONSPEED && speed != MOSTCOMMONSPEED2) {
+                printf("Duplicate %"PRIu64"c/%"PRIu64" found\n", speed & 65535, speed >> 32);
+            }
+            #endif
             return;
         }
     }
@@ -843,7 +855,7 @@ void run_soup() {
             #endif
             cache_phase();
             if ((speed = check_for_spaceship()) != 0) {
-                if (speed < MINPERIOD) {
+                if ((speed >> 32) < MINPERIOD) {
                     #if DEBUG > 0
                     printf("complete, less than min period\n");
                     #endif
