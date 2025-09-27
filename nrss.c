@@ -27,7 +27,6 @@ when randomization is off it will try every possible combination of engines
 #define RULESTR "B2-ak3ce4eikqrz5-iknq6-ek8/S1c2aek3aekn4eiknry5eiky6-ei7c8"
 
 // maximum height and width, these are the base-2 logarithms
-// if a pattern exceeds these, it is reported as potential infinite growth
 // should not be higher than 16
 #define HEIGHT 8
 #define WIDTH 12
@@ -65,7 +64,7 @@ static inline void put_engine(uint8_t data[], uint32 i) {
 #define ENGINEWIDTH 2
 
 // the number of phases of the engine
-#define ENGINEPHASES 128
+#define ENGINEPHASES 1
 
 // whether to skip oscillators
 #define SKIPOSCILLATORS 1
@@ -81,6 +80,9 @@ static inline void put_engine(uint8_t data[], uint32 i) {
 
 // whether to reduce the period to lowest terms
 #define REDUCEPERIOD 1
+
+// minimum period
+#define MINPERIOD 3
 
 // uncomment to make it work in stupid online C compilers
 // #define BRUH
@@ -679,9 +681,13 @@ void read_state() {
     if (rles != NULL) {
         free(rles);
     }
-    rles = malloc(rle_size);
-    memcpy(rles, data + i, rle_size - 1);
-    rles[rle_size - 1] = '\0';
+    if (rle_size != 0) {
+        rles = malloc(rle_size);
+        memcpy(rles, data + i, rle_size - 1);
+        rles[rle_size - 1] = '\0';
+    } else {
+        rles = NULL;
+    }
     free(data);
     fclose(f);
     #endif
@@ -714,9 +720,9 @@ void add_ship(uint64_t speed) {
     for (uint16 i = 0; i < ships; i++) {
         fprintf(f, "%"PRIu64"c/%"PRIu64" ", speeds[i] & 65535, speeds[i] >> 32);
     }
-    printf("ships: %"PRIuFAST16"\n", ships);
+    // printf("ships: %"PRIuFAST16"\n", ships);
     #ifndef BRUH
-    if (ships != 1) {
+    if (ships != 1 && rles != NULL) {
         fprintf(f, "\n%s", rles);
     }
     #endif
@@ -835,6 +841,12 @@ void run_soup() {
             #endif
             cache_phase();
             if ((speed = check_for_spaceship()) != 0) {
+                if (speed < MINPERIOD) {
+                    #if DEBUG > 0
+                    printf("complete, less than min period\n");
+                    #endif
+                    break;
+                }
                 #if SKIPOSCILLATORS > 0
                 if ((speed & 65535) == 0) {
                     #if DEBUG > 0
