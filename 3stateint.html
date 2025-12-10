@@ -110,6 +110,7 @@ button {
             <div id="buttons">
                 <button id="generate">Generate</button>
                 <button id="download">Download</button>
+                <button id="copy">Copy</button>
                 <!-- <button id="help">Help</button> -->
             </div>
             <div id="out"></div>
@@ -213,6 +214,13 @@ function parseTransition(num, tr, isLast, input, output, state) {
         output = 0;
     }
     tr = tr.slice(1);
+    if (tr === '*') {
+        let out = '';
+        for (let letter of VALID_TRANSITIONS[num]) {
+            out += input + ', ' + remapTransition(TRANSITIONS[num + letter].map((x, i) => x === 0 ? 0 : 'x' + (i + 1))).join(', ') + ', ' + output + '\n';
+        }
+        return out;
+    }
     let out = '';
     let letter = '';
     let upper = '';
@@ -270,7 +278,7 @@ function generateTable(rule) {
     if (sections.length < 4 || sections.length > 6) {
         error(`Expected 3 to 5 slashes!`);
     }
-    let out = `@RULE Test\n@TABLE\nn_states: 3\nneighborhood: Moore\nsymmetries: rotate4reflect\nvar a1 = {0, 1, 2}\nvar a2 = a1\nvar a3 = a1\nvar a4 = a1\nvar a5 = a1\nvar a6 = a1\nvar a7 = a1\nvar a8 = a1\nvar x = {1, 2}\n`;
+    let out = `@RULE Test\n@TABLE\nn_states: 3\nneighborhood: Moore\nsymmetries: rotate4reflect\nvar a1 = {0, 1, 2}\nvar a2 = a1\nvar a3 = a1\nvar a4 = a1\nvar a5 = a1\nvar a6 = a1\nvar a7 = a1\nvar a8 = a1\nvar x1 = {1, 2}\nvar x2 = x1\nvar x3 = x1\nvar x4 = x1\nvar x5 = x1\nvar x6 = x1\nvar x7 = x1\nvar x8 = x1\n`;
     for (let i = 0; i < sections.length; i++) {
         let [input, output, state] = SECTION_TYPES[i];
         let data = sections[i].slice(1);
@@ -308,7 +316,7 @@ function generateTable(rule) {
             }
         }
     }
-    out += `x, a1, a2, a3, a4, a5, a6, a7, a8, 0\n@COLORS\n0 0 0 0\n1 255 255 255\n2 91 207 251\n`;
+    out += `x1, a1, a2, a3, a4, a5, a6, a7, a8, 0\n@COLORS\n0 0 0 0\n1 255 255 255\n2 91 207 251\n`;
     return out;
 }
 
@@ -347,6 +355,11 @@ document.getElementById('download').addEventListener('click', () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+});
+
+document.getElementById('copy').addEventListener('click', () => {
+    let table = generateTableFromInput();
+    navigator.clipboard.writeText(table);
 });
 
 // document.getElementById('help').addEventListener('click', () => {
