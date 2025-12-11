@@ -142,7 +142,7 @@ const TRANSITIONS = {
     '2i': [0, 1, 0, 0, 0, 0, 1, 0],
     '2k': [0, 1, 0, 0, 0, 0, 0, 1],
     '2n': [1, 0, 0, 0, 0, 0, 0, 1],
-    '3a': [1, 1, 0, 0, 1, 0, 0, 0],
+    '3a': [1, 1, 0, 1, 0, 0, 0, 0],
     '3c': [1, 0, 1, 0, 0, 0, 0, 1],
     '3e': [0, 1, 0, 1, 1, 0, 0, 0],
     '3i': [1, 0, 0, 1, 0, 1, 0, 0],
@@ -198,6 +198,10 @@ function remapTransition(tr) {
     return [tr[1], tr[2], tr[4], tr[7], tr[6], tr[5], tr[3], tr[0]];
 }
 
+function doSingle(letter, upper, prefix) {
+
+}
+
 function parseTransition(num, tr, isLast, input, output, state) {
     console.log(num, tr, isLast, input, output, state);
     if (tr === '+') {
@@ -218,6 +222,14 @@ function parseTransition(num, tr, isLast, input, output, state) {
         let out = '';
         for (let letter of VALID_TRANSITIONS[num]) {
             out += input + ', ' + remapTransition(TRANSITIONS[num + letter].map((x, i) => x === 0 ? 0 : 'x' + (i + 1))).join(', ') + ', ' + output + '\n';
+        }
+        return out;
+    } else if (tr === '&') {
+        let out = '';
+        for (let i = 0; i < 8; i++) {
+            for (let letter of VALID_TRANSITIONS[num]) {
+                out += input + ', ' + remapTransition(TRANSITIONS[num + letter].map((x, j) => (x === 0 ? 0 : (i === j ? state : 'x' + (j + 1))))).join(', ') + ', ' + output + '\n';
+            }
         }
         return out;
     }
@@ -251,6 +263,20 @@ function parseTransition(num, tr, isLast, input, output, state) {
             out += input + ', ' + remapTransition(nums).join(', ') + ', ' + output + '\n';
             letter = '';
             upper = '';
+        } else if (char === '*' || char === '&') {
+            if (letter) {
+                if (upper) {
+                    throw new SyntaxError('Cannot use prefix and uppercase at the same time');
+                }
+                if (char === '*') {
+                    out += input + ', ' + remapTransition(TRANSITIONS[num + letter].map((x, j) => (x === 0 ? 0 : (i === j ? state : 'x' + (j + 1))))).join(', ') + ', ' + output + '\n';
+                } else {
+                    for (let i = 0; i < 8; i++) {
+                        out += input + ', ' + remapTransition(TRANSITIONS[num + letter].map((x, j) => (x === 0 ? 0 : (i === j ? state : 'x' + (j + 1))))).join(', ') + ', ' + output + '\n';
+                    }
+                }
+                letter = '';
+            }
         } else {
             if (letter) {
                 out += input + ', ' + remapTransition(TRANSITIONS[num + letter].map((x, i) => x === 0 ? 0 : state)).join(', ') + ', ' + output + '\n';
@@ -315,6 +341,11 @@ function generateTable(rule) {
             parts.push(current);
         }
         for (let part of parts) {
+            if (part === '*') {
+                for (let i = 0; i <= 8; i++) {
+                    out += parseTransition(num, '*', false, input, output, state);
+                }
+            }
             let trs = [];
             let num = parseInt(part[0]);
             let current = '+';

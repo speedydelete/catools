@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Compact Table Generator</title>
+        <meta charset="utf-8" />
+        <!--
+
+            Copyright (c) 2025 speedydelete
+
+            Permission is hereby granted, free of charge, to any person obtaining a copy
+            of this software and associated documentation files (the "Software"), to deal
+            in the Software without restriction, including without limitation the rights
+            to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+            copies of the Software, and to permit persons to whom the Software is
+            furnished to do so, subject to the following conditions:
+
+            The above copyright notice and this permission notice shall be included in all
+            copies or substantial portions of the Software.
+
+            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+            IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+            FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+            AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+            LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+            OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+            SOFTWARE.
+
+        -->
+        <style>
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    width: 100%;
+    font-family:'Courier New', Courier, monospace;
+}
+
+body {
+    margin: 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+main {
+    padding: 30px;
+    padding-bottom: 30px;
+    max-width: fit-content;
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+}
+
+h1 {
+    width: 100%;
+    text-align: center;
+    font-size: 2em;
+}
+
+#rule {
+    width: 60ch;
+    height: 4em;
+    max-height: 8em;
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+    resize: none;
+    font-family: inherit;
+    font-size: 1em;
+}
+
+#rule:active, #rule:focus {
+    outline: none;
+}
+
+#buttons {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    gap: 30px;
+}
+
+button {
+    padding: 3px 6px;
+    font-family: inherit;
+    font-size: inherit;
+    background-color: inherit;
+    color: inherit;
+    border: 1px solid black;
+}
+
+#out {
+    flex: 1;
+    max-height: 100%;
+    padding-right: 15px;
+    overflow-y: auto;
+    overflow-wrap: wrap;
+}
+
+#out {
+    width: 60ch;
+    white-space: pre-wrap;
+}
+
+        </style>
+    </head>
+    <body>
+        <main>
+            <h1>Compact Table Generator</h1>
+            <textarea id="rule"></textarea>
+            <div id="buttons">
+                <button id="generate">Generate</button>
+                <button id="download">Download</button>
+                <button id="copy">Copy</button>
+                <button id="help">Help</button>
+            </div>
+            <div id="out"></div>
+            <script>'use strict';function printError(e){let x=String(e instanceof Error?('stack' in e?e.stack:e):e).replaceAll(/file:\/\/\/media\/fuse\/drivefs-[0-9a-f]+\/root\/code\//g,'').replaceAll('about:srcdoc','index.js');if(e instanceof Error&&!x.includes('Error'))x=String(e)+'\n'+x;for (let m of x.matchAll(/data:text\/javascript;base64,([a-zA-Z0-9+/=]+)/g)){let f=atob(m[1]);x=x.replaceAll(m[0],f.slice(2,f.indexOf('*/')))}if(document.readyState!=='complete'){alert(x);return;}let t=document.createElement('div');t.textContent='\n\n'+x;t.style.color='red';document.getElementById('out').replaceChildren(t);document.getElementById('config').style.display='none';let l=setInterval(()=>{});for(let i=1;i<=l;i++)clearInterval(i);l=requestAnimationFrame(()=>{});for(let i=1;i<=l;i++)cancelAnimationFrame(i);}window.addEventListener('error',e=>{printError(e.error);return true;});window.addEventListener('unhandledrejection',e=>{e.preventDefault();printError(e.reason);});</script>
+        </main>
+        <script>
+
+'use strict';
+
+const TRANSITIONS = Object.fromEntries(Object.entries({
+    '0c': [0, 0, 0, 0, 0, 0, 0, 0],
+    '1c': [1, 0, 0, 0, 0, 0, 0, 0],
+    '1e': [0, 1, 0, 0, 0, 0, 0, 0],
+    '2a': [1, 1, 0, 0, 0, 0, 0, 0],
+    '2c': [1, 0, 1, 0, 0, 0, 0, 0],
+    '2e': [0, 1, 0, 0, 1, 0, 0, 0],
+    '2i': [0, 1, 0, 0, 0, 0, 1, 0],
+    '2k': [0, 1, 0, 0, 0, 0, 0, 1],
+    '2n': [1, 0, 0, 0, 0, 0, 0, 1],
+    '3a': [1, 1, 0, 1, 0, 0, 0, 0],
+    '3c': [1, 0, 1, 0, 0, 0, 0, 1],
+    '3e': [0, 1, 0, 1, 1, 0, 0, 0],
+    '3i': [1, 0, 0, 1, 0, 1, 0, 0],
+    '3j': [0, 0, 1, 0, 1, 0, 1, 0],
+    '3k': [0, 1, 0, 1, 0, 0, 0, 1],
+    '3n': [1, 0, 1, 1, 0, 0, 0, 0],
+    '3q': [1, 0, 0, 1, 0, 0, 0, 1],
+    '3r': [0, 1, 1, 0, 0, 0, 1, 0],
+    '3y': [1, 0, 1, 0, 0, 0, 1, 0],
+    '4a': [1, 0, 0, 1, 0, 1, 1, 0],
+    '4c': [1, 0, 1, 0, 0, 1, 0, 1],
+    '4e': [0, 1, 0, 1, 1, 0, 1, 0],
+    '4i': [1, 0, 1, 1, 1, 0, 0, 0],
+    '4j': [0, 0, 1, 1, 1, 0, 1, 0],
+    '4k': [0, 1, 1, 1, 0, 0, 0, 1],
+    '4n': [1, 0, 0, 1, 0, 1, 0, 1],
+    '4q': [1, 1, 0, 1, 0, 0, 0, 1],
+    '4r': [0, 1, 1, 0, 1, 0, 1, 0],
+    '4t': [1, 1, 1, 0, 0, 0, 1, 0],
+    '4w': [1, 0, 0, 1, 0, 0, 1, 1],
+    '4y': [1, 0, 1, 0, 0, 1, 1, 0],
+    '4z': [1, 1, 0, 0, 0, 0, 1, 1],
+}).map(([x, y]) => [x, [y[1], y[2], y[4], y[7], y[6], y[5], y[3], y[0]]]));
+
+for (let key of Object.keys(TRANSITIONS)) {
+    if (!key.startsWith('4')) {
+        TRANSITIONS[(8 - parseInt(key[0])) + key[1]] = TRANSITIONS[key].map(x => 1 - x);
+    }
+}
+
+const VALID_TRANSITIONS = [
+    'c',
+    'ce',
+    'aceikn',
+    'aceijknqry',
+    'aceijknqrtwyz',
+    'aceijknqry',
+    'aceikn',
+    'ce',
+    'c',
+];
+
+const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
+const DIGITS = '0123456789';
+
+const VAR_NAMES = new Set(LETTERS);
+const IGNORE_VAR_NAMES = Array.from(LETTERS);
+for (let x of LETTERS) {
+    for (let y of LETTERS) {
+        VAR_NAMES.add(x + y);
+        if (x !== 'x') {
+            IGNORE_VAR_NAMES.push(x + y);
+        }
+    }
+}
+
+function parseTransitions(data) {
+    if (data.length === 0) {
+        return [];
+    }
+    let out = new Set();
+    if (!DIGITS.includes(data[0])) {
+        throw new RuleError(`Expected digit, got '${data[0]}'`);
+    }
+    let num = parseInt(data[0]);
+    if (num >= VALID_TRANSITIONS.length) {
+        throw new RuleError(`No transitions with ${num} neighbors`);
+    }
+    let chars = '';
+    let minus = false;
+    for (let char of data.slice(1)) {
+        if (DIGITS.includes(char)) {
+            if (chars.length === 0) {
+                for (let char of VALID_TRANSITIONS[num]) {
+                    out.add(num + char);
+                }
+            } else {
+                for (let char of chars) {
+                    if (minus) {
+                        out.delete(num + char);
+                    } else {
+                        out.add(num + char);
+                    }
+                }
+            }
+            minus = false;
+            chars = '';
+            num = parseInt(char);
+            if (num >= VALID_TRANSITIONS.length) {
+                throw new RuleError(`No transitions with ${num} neighbors`);
+            }
+        } else if (char === '-') {
+            if (chars.length > 0) {
+                throw new RuleError(`Expected letter, got '-'`);
+            }
+            minus = true;
+            for (let char of VALID_TRANSITIONS[num]) {
+                out.add(num + char);
+            }
+        } else if (LETTERS.includes(char)) {
+            if (!VALID_TRANSITIONS[num].includes(char)) {
+                throw new RuleError(`Invalid transition: '${num}${char}'`);
+            }
+            chars += char;
+        } else {
+            throw new RuleError(`Invalid character in isotropic rulestring: '${char}'`);
+        }
+    }
+    if (chars.length === 0) {
+        for (let char of VALID_TRANSITIONS[num]) {
+            out.add(num + char);
+        }
+    } else {
+        for (let char of chars) {
+            if (minus) {
+                out.delete(num + char);
+            } else {
+                out.add(num + char);
+            }
+        }
+    }
+    return Array.from(out);
+}
+
+const COLORS = [
+    '0 0 0',
+    '255 255 255',
+    '0 191 255',
+    '255 127 255',
+    '255 255 127',
+    '255 127 127',
+    '127 255 127',
+    '0 0 255',
+    '0 255 0',
+    '255 0 0',
+];
+
+function generateTable(rule) {
+    rule = rule.trim();
+    if (!rule.startsWith('(') && !rule.endsWith(')')) {
+        throw new Error(`Rule must start and end with parentheses`);
+    }
+    let data = [];
+    let kills = [];
+    let vars = {};
+    let ignoreCount = 0;
+    let anyUsed = false;
+    for (let line of rule.slice(1, -1).split(' ')) {
+        if (line.includes('/')) {
+            let [prefix, ...parts] = line.split('/');
+            let input = prefix[0];
+            let output = prefix[1];
+            let slice = 2;
+            if (!output || !DIGITS.includes(output)) {
+                output = input;
+                slice = 1;
+            }
+            let ignore = [];
+            if (input !== '0') {
+                ignore.push(input);
+            }
+            if (output !== '0' && input !== output) {
+                ignore.push(output);
+            }
+            let mode = '+';
+            for (let char of prefix.slice(slice)) {
+                if (char === 'x') {
+                    ignore = [];
+                } else if (char === '+') {
+                    mode = '+';
+                } else if (char === '-') {
+                    mode = '-';
+                } else if (DIGITS.includes(char)) {
+                    if (mode === '-') {
+                        ignore.push(char);
+                    } else {
+                        let index = ignore.indexOf(char);
+                        if (index !== -1) {
+                            ignore = ignore.splice(index, 1);
+                        }
+                    }
+                } else {
+                    throw new Error(`Invalid prefix for slash part: ${prefix}`);
+                }
+            }
+            for (let part of parts) {
+                let x;
+                let y;
+                let start = part[0];
+                let negate = false;
+                if (start === 'B') {
+                    x = '0';
+                    y = output;
+                } else if (start === 'S') {
+                    x = output;
+                    y = output;
+                    negate = true;
+                } else if (start === 'A') {
+                    x = '0';
+                    y = output;
+                    negate = true;
+                } else if (start === 'D') {
+                    x = output;
+                    y = output;
+                } else if (start === 'C') {
+                    x = input;
+                    y = output;
+                } else if (start === 'E') {
+                    x = input;
+                    y = output;
+                    negate = true;
+                } else {
+                    part = 'C' + part;
+                    x = input;
+                    y = output;
+                }
+                if (part.slice(1) === '*') {
+                    kills.push([x, 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', y]);
+                    anyUsed = true;
+                    continue;
+                }
+                let ignoreVar;
+                let ignoreUsed = false;
+                if (ignore.length > 0) {
+                    ignoreVar = IGNORE_VAR_NAMES[ignoreCount + 1];
+                }
+                let trs = parseTransitions(part.slice(1));
+                for (let tr of trs) {
+                    tr = TRANSITIONS[tr];
+                    if (ignore.length === 0) {
+                        tr = tr.map(x => x ? input : '0');
+                    } else {
+                        ignoreUsed = true;
+                        tr = tr.map(x => x ? input : ignoreVar);
+                    }
+                    data.push([x, ...tr, y]);
+                }
+                if (ignoreUsed) {
+                    ignoreCount++;
+                    vars[ignoreVar] = ignore;
+                }
+                if (negate) {
+                    data.push([x, 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', y]);
+                    anyUsed = true;
+                }
+            }
+            data.push([]);
+        } else if (line.includes('=')) {
+            let [name, value] = line.split('=');
+            if (name.length !== 1) {
+                throw new Error(`Variables must be 1 character`);
+            }
+            name = 'x' + name;
+            if (vars[name]) {
+                throw new Error(`Variable '${name.slice(1)}' was already declared`);
+            }
+            vars[name] = Array.from(value);
+        } else {
+            data.push(Array.from(line.replaceAll(',', '')).map(x => DIGITS.includes(x) ? x : (x === '*' || x === '-' ? x : 'x' + x)), []);
+        }
+    }
+    if (kills.length > 0) {
+        data.push(...kills, []);
+    }
+    let body = '';
+    let allUses = {};
+    let maxState = 0;
+    for (let value of Object.values(vars)) {
+        for (let x of value) {
+            let y = parseInt(x);
+            if (y > maxState) {
+                maxState = y;
+            }
+        }
+    }
+    for (let line of data) {
+        if (line.length === 0) {
+            body += '\n';
+            continue;
+        }
+        let outLine = [];
+        let uses = {};
+        let anyUses = 0;
+        for (let value of line) {
+            if (value in vars) {
+                if (VAR_NAMES.has(value)) {
+                    if (value in uses) {
+                        uses[value]++;
+                    } else {
+                        uses[value] = 1;
+                    }
+                    outLine.push(value + uses[value]);
+                } else {
+                    uses[value] = 1;
+                    outLine.push(value);
+                }
+            } else if (value.startsWith('a')) {
+                outLine.push(value);
+            } else if (value === '-' || value === '*') {
+                anyUsed = true;
+                anyUses++;
+                outLine.push('a' + anyUses);
+            } else {
+                outLine.push(value);
+                value = parseInt(value);
+                if (value > maxState) {
+                    maxState = value;
+                }
+            }
+        }
+        for (let [key, value] of Object.entries(uses)) {
+            if (key in allUses) {
+                if (value > allUses[key]) {
+                    allUses[key] = value;
+                }
+            } else {
+                allUses[key] = value;
+            }
+        }
+        body += outLine.join(', ') + '\n';
+    }
+    let out = `\n@RULE Test\n\n@TABLE\n\nn_states: ${maxState + 1}\nneighborhood: Moore\nsymmetries: rotate4reflect\n\n`;
+    if (anyUsed) {
+        let states = [];
+        for (let i = 0; i <= maxState; i++) {
+            states.push(i);
+        }
+        out += `var a1 = {${states.join(', ')}}\nvar a2 = a1\nvar a3 = a1\nvar a4 = a1\nvar a5 = a1\nvar a6 = a1\nvar a7 = a1\nvar a8 = a1\nvar a9 = a1\n`;
+    }
+    for (let [name, value] of Object.entries(vars)) {
+        if (!name.startsWith('x')) {
+            let newValue = [];
+            for (let i = 0; i <= maxState; i++) {
+                if (!value.includes(String(i))) {
+                    newValue.push(String(i));
+                }
+            }
+            value = newValue;
+        }
+        out += `var ${name}1 = {${value.join(', ')}}\n`;
+        for (let i = 2; i <= allUses[name]; i++) {
+            out += `var ${name}${i} = ${name}1\n`;
+        }
+        out += `\n`;
+    }
+    out += body + 'a1, a2, a3, a4, a5, a6, a7, a8, a9, 0\n';
+    out += `@COLORS\n\n`;
+    for (let i = 0; i <= maxState; i++) {
+        if (COLORS[i]) {
+            out += `${i} ${COLORS[i]}\n`;
+        }
+    }
+    return out;
+}
+
+let ruleElt = document.getElementById('rule');
+let outElt = document.getElementById('out');
+
+document.getElementById('generate').addEventListener('click', () => {
+    outElt.textContent = generateTable(ruleElt.value);
+});
+
+document.getElementById('download').addEventListener('click', () => {
+    let table = generateTable(ruleElt.value);
+    let blob = new Blob([table]);
+    let url = URL.createObjectURL(blob);
+    let link = document.createElement('a');
+    link.href = url;
+    link.download = document.getElementById('rule').value + '.rule';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+});
+
+document.getElementById('copy').addEventListener('click', () => {
+    let table = generateTable(ruleElt.value);
+    navigator.clipboard.writeText(table);
+});
+
+let value = localStorage['ctable-input'];
+if (value) {
+    ruleElt.value = value;
+}
+ruleElt.addEventListener('input', () => {
+    localStorage['ctable-input'] = ruleElt.value;
+});
+
+const HELP_TEXT = `
+Compact tables are a compact format for a subset of RuleLoader @TABLES. Currently, the neighborhood is always Moore, it is always rotate4reflect symmetry, and a maximum of 10 states and 52 variables.
+
+The rule must be enclosed in parentheses. 
+
+oT start, you can do normal transition lines by listing 10 characters in the same way as Golly. These can either be numbers, for states, letters, for variables, or '*' or '-', for any state.
+
+Variables may be declared like 'a=01', which means 'var a = {0, 1}'. Lowercase variables are unbound and uppercase ones are bound.
+
+You may also use INT transitions in your rule. This is done via syntax like '1/B3/S23', which means that state 1 follows B3/S23. You may also use A/D, B/S, even B/A/S, or any other combination of your choosing.
+
+You may also do something like '12/B2a', which means that state 1 can create state 2 cells via B2a.
+
+Additionally, 'C' means change, and if there is no prefix (e.g. B/S), it is implied, so '12/1e' and '12/C1e' are equivalent, and mean that state 1, if it is touching another state 1 cell via 1e, then it will convert to state 2. If you want to do the equivalent of A/D notation like this, you can use 'E', which specifies scenarios where it doesn't convert as opposed to scenarios where it does.
+
+In the INT syntax, certain states are ignored (treated as state 0), so you can have them around without affecting the transition. By default, all states other than state 0, the input state, and the output state, are ignored.
+
+However, this can be modified by inserting things before the first slash, but after the input/output states. 'x' means to have no ignored states (other than state 0), '+' lets you add ignored states, and '-' lets you remove ignored states. So, '14-5+4/B3/S23' means that the input state is 1, the output state is 4, state 5 isn't ignored, and state 4 is ignored.
+
+Finally, '*' is shorthand for '012345678' in the INt syntax.
+
+Examples:
+<ul><li>(1/S 2-1/B1e 21/C* 3/S12 a=01 0a12300002) has interesting circuitry, everything can reflect/split a 2-cell spaceship.</li><br><li>(1-2/B1c 12/B1e/* 2/S 0120000002) has a c/1d spaceship.</li></ul>
+`;
+
+document.getElementById('help').addEventListener('click', () => {
+    outElt.innerHTML = HELP_TEXT;
+});
+
+        </script>
+    </body>
+</html>
+
