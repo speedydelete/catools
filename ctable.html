@@ -463,7 +463,7 @@ function generateTable(rule) {
         for (let i = 0; i <= maxState; i++) {
             states.push(i);
         }
-        out += `var a1 = {${states.join(', ')}}\nvar a2 = a1\nvar a3 = a1\nvar a4 = a1\nvar a5 = a1\nvar a6 = a1\nvar a7 = a1\nvar a8 = a1\nvar a9 = a1\n`;
+        out += `var a1 = {${states.join(', ')}}\nvar a2 = a1\nvar a3 = a1\nvar a4 = a1\nvar a5 = a1\nvar a6 = a1\nvar a7 = a1\nvar a8 = a1\nvar a9 = a1\n\n`;
     }
     for (let [name, value] of Object.entries(vars)) {
         if (!name.startsWith('x')) {
