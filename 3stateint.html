@@ -228,7 +228,7 @@ function parseTransition(num, tr, isLast, input, output, state) {
         if (LETTERS.includes(char)) {
             let value;
             if (num < 4) {
-                value = LETTER_NUMBERS.indexOf(upper);
+                value = LETTER_NUMBERS.indexOf(char);
             } else {
                 upper += char;
                 if (upper.length === 2) {
@@ -237,8 +237,18 @@ function parseTransition(num, tr, isLast, input, output, state) {
                     continue;
                 }
             }
-            value = value.toString(2).padStart(num, 0);
-            out += input + ', ' + remapTransition(TRANSITIONS[num + letter].map((x, i) => x === 0 ? 0 : (value[i] === '1' ? (state === 1 ? 2 : 1) : state))).join(', ') + ', ' + output + '\n';
+            value = value.toString(2).padStart(num, '0');
+            let nums = [];
+            for (let i = 0; i < 8; i++) {
+                let x = TRANSITIONS[num + letter][i];
+                if (x === 0) {
+                    nums.push(0);
+                } else {
+                    nums.push(value[0] === '1' ? (state === 1 ? 2 : 1) : state);
+                    value = value.slice(1);
+                }
+            }
+            out += input + ', ' + remapTransition(nums).join(', ') + ', ' + output + '\n';
             letter = '';
             upper = '';
         } else {
@@ -253,17 +263,24 @@ function parseTransition(num, tr, isLast, input, output, state) {
             out += input + ', ' + remapTransition(TRANSITIONS[num + letter].map((x, i) => x === 0 ? 0 : state)).join(', ') + ', ' + output + '\n';
         } else {
             let value = null;
-            if (num < 4) {
+            if (num < 5) {
                 value = LETTER_NUMBERS.indexOf(upper);
-            } else {
-                upper += char;
-                if (upper.length === 2) {
-                    value = LETTER_NUMBERS.indexOf(upper);
-                }
+            } else if (upper.length === 2) {
+                value = LETTER_NUMBERS.indexOf(upper);
             }
             if (value !== null) {
-                value = value.toString(2).padStart(num, 0);
-                out += input + ', ' + remapTransition(TRANSITIONS[num + letter].map((x, i) => value[i] === '1' ? (state === 1 ? 2 : 1) : state)).join(', ') + ', ' + output + '\n';
+                value = value.toString(2).padStart(num, '0');
+                let nums = [];
+                for (let i = 0; i < 8; i++) {
+                    let x = TRANSITIONS[num + letter][i];
+                    if (x === 0) {
+                        nums.push(0);
+                    } else {
+                        nums.push(value[0] === '1' ? (state === 1 ? 2 : 1) : state);
+                        value = value.slice(1);
+                    }
+                }
+                out += input + ', ' + remapTransition(nums).join(', ') + ', ' + output + '\n';
             }
         }
     }
@@ -303,7 +320,7 @@ function generateTable(rule) {
             let current = '+';
             for (let char of part.slice(1)) {
                 if (char === '+' || char === '-') {
-                    parts.push(current);
+                    trs.push(current);
                     current = char;
                 } else {
                     current += char;
