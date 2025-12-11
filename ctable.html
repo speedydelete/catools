@@ -198,11 +198,11 @@ function parseTransitions(data) {
     }
     let out = new Set();
     if (!DIGITS.includes(data[0])) {
-        throw new RuleError(`Expected digit, got '${data[0]}'`);
+        throw new Error(`Expected digit, got '${data[0]}'`);
     }
     let num = parseInt(data[0]);
     if (num >= VALID_TRANSITIONS.length) {
-        throw new RuleError(`No transitions with ${num} neighbors`);
+        throw new Error(`No transitions with ${num} neighbors`);
     }
     let chars = '';
     let minus = false;
@@ -225,11 +225,11 @@ function parseTransitions(data) {
             chars = '';
             num = parseInt(char);
             if (num >= VALID_TRANSITIONS.length) {
-                throw new RuleError(`No transitions with ${num} neighbors`);
+                throw new Error(`No transitions with ${num} neighbors`);
             }
         } else if (char === '-') {
             if (chars.length > 0) {
-                throw new RuleError(`Expected letter, got '-'`);
+                throw new Error(`Expected letter, got '-'`);
             }
             minus = true;
             for (let char of VALID_TRANSITIONS[num]) {
@@ -237,11 +237,11 @@ function parseTransitions(data) {
             }
         } else if (LETTERS.includes(char)) {
             if (!VALID_TRANSITIONS[num].includes(char)) {
-                throw new RuleError(`Invalid transition: '${num}${char}'`);
+                throw new Error(`Invalid transition: '${num}${char}'`);
             }
             chars += char;
         } else {
-            throw new RuleError(`Invalid character in isotropic rulestring: '${char}'`);
+            throw new Error(`Invalid character in isotropic rulestring: '${char}'`);
         }
     }
     if (chars.length === 0) {
@@ -321,6 +321,7 @@ function generateTable(rule) {
                     throw new Error(`Invalid prefix for slash part: ${prefix}`);
                 }
             }
+            let added = false;
             for (let part of parts) {
                 let x;
                 let y;
@@ -372,6 +373,7 @@ function generateTable(rule) {
                         tr = tr.map(x => x ? input : ignoreVar);
                     }
                     data.push([x, ...tr, y]);
+                    added = true;
                 }
                 if (ignoreUsed) {
                     ignoreCount++;
@@ -382,7 +384,9 @@ function generateTable(rule) {
                     anyUsed = true;
                 }
             }
-            data.push([]);
+            if (added) {
+                data.push([]);
+            }
         } else if (line.includes('=')) {
             let [name, value] = line.split('=');
             if (name.length !== 1) {
